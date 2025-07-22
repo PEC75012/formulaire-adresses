@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Formulaire de Contact</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    input, button { width: 100%; padding: 10px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h2>Formulaire de Contact</h2>
+  <form id="contactForm">
+    <input type="text" name="nom" placeholder="Nom" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="tel" name="telephone" placeholder="Téléphone">
+    <input id="adresse" name="adresse" class="awesomplete" placeholder="Commencez à taper une adresse..." autocomplete="off" required>
+    <button type="submit">Envoyer</button>
+  </form>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+  <script>
+    const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwmEn8BKXfzA19Blnqu0v9BpnHgvp7DGZv-RnPzxRNtLf5iMdb8frIuEvJT70KoZ04w4g/exec";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("adresses.json")
+        .then(res => res.json())
+        .then(adresses => {
+          new Awesomplete(document.querySelector("#adresse"), {
+            list: adresses,
+            minChars: 2,
+            maxItems: 15,
+            autoFirst: true
+          });
+        });
+
+      document.getElementById("contactForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(this).entries());
+
+        fetch(WEBHOOK_URL, {
+          method: "POST",
+          body: JSON.stringify(data),
+          headers: { "Content-Type": "application/json" }
+        })
+        .then(res => res.json())
+        .then(res => {
+          alert("Formulaire soumis avec succès !");
+          this.reset();
+        })
+        .catch(err => alert("Erreur d'envoi : " + err));
+      });
+    });
+  </script>
+</body>
+</html>
