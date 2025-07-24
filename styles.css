@@ -34,6 +34,7 @@ fieldset {
   margin-bottom: 1rem;
 }
 label {
+  marging-let: 15px;
   display: flex;
   align-items: center;
   gap: 0.4rem;
