@@ -122,23 +122,38 @@
   </div>
 
 <script>
-    document.getElementById('adresse').addEventListener('input', function(e) {
-      const input = e.target.value.toLowerCase();
-      const dataList = document.getElementById('liste-adresses');
-      const options = Array.from(dataList.options);
-      if (!options.some(opt => opt.value.toLowerCase().startsWith(input))) {
-        fetch('adresses.json')
-          .then(res => res.json())
-          .then(data => {
-            dataList.innerHTML = '';
-            data.filter(addr => addr.toLowerCase().includes(input)).forEach(adresse => {
-              const option = document.createElement('option');
-              option.value = adresse;
-              dataList.appendChild(option);
-            });
-          });
-      }
+  let adressesCache = [];
+
+  // Charger une seule fois le fichier adresses
+  fetch('adresses.json')
+    .then(res => res.json())
+    .then(data => {
+      adressesCache = data;
     });
-  </script>
+
+  function debounce(fn, delay) {
+    let timer = null;
+    return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  const updateSuggestions = debounce(function(e) {
+    const input = e.target.value.toLowerCase();
+    const dataList = document.getElementById('liste-adresses');
+    dataList.innerHTML = '';
+
+    const suggestions = adressesCache.filter(addr => addr.toLowerCase().includes(input)).slice(0, 10); // max 10 suggestions
+    suggestions.forEach(adresse => {
+      const option = document.createElement('option');
+      option.value = adresse;
+      dataList.appendChild(option);
+    });
+  }, 250); // délai de 250ms
+
+  document.getElementById('adresse').addEventListener('input', updateSuggestions);
+</script>
+
 </body>
 </html>
