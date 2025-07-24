@@ -3,112 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Formulaire d'inscription</title>
+  <title>Formulaire iPhone-compatible</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
       padding: 0;
       background-color: #f7f7f7;
     }
-
     .container {
-      width: 100%;
       max-width: 500px;
       margin: 2rem auto;
       padding: 1.5rem;
-      background-color: white;
+      background: white;
       border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     }
-
     h1 {
-      font-size: 1.5rem;
       text-align: center;
+      font-size: 1.4rem;
+      color: #333;
       margin-bottom: 1rem;
-      color: #1f2937;
     }
-
-    input, button, fieldset {
+    input, button {
       width: 100%;
-      margin-bottom: 1rem;
       padding: 0.75rem;
       font-size: 1rem;
-      border: 1px solid #ddd;
+      margin-bottom: 1rem;
       border-radius: 8px;
+      border: 1px solid #ccc;
     }
-
-    input:focus, button:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-    }
-
-    input[type="checkbox"] {
-      width:auto;
-      margin-top:15px;
-    }
-    
     fieldset {
       border: none;
       padding: 0;
+      margin-bottom: 1rem;
     }
-
-    legend {
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-    }
-
     label {
       display: flex;
       align-items: center;
       gap: 0.5rem;
       margin-bottom: 0.5rem;
-      font-size: 0.95rem;
-      color: #374151;
     }
-
-    button {
-      background-color: #3b82f6;
-      color: white;
-      border: none;
+    .suggestions {
+      border: 1px solid #ccc;
+      border-top: none;
+      max-height: 150px;
+      overflow-y: auto;
+      background: white;
+      position: absolute;
+      width: 100%;
+      z-index: 10;
+    }
+    .suggestion {
+      padding: 0.5rem;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
-
-    button:hover {
-      background-color: #2563eb;
+    .suggestion:hover {
+      background: #f0f0f0;
     }
-
-    @media (max-width: 600px) {
-      .container {
-        margin: 1rem;
-        padding: 1rem;
-      }
-
-      h1 {
-        font-size: 1.25rem;
-      }
+    .autocomplete-wrapper {
+      position: relative;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Formulaire d'inscription</h1>
-    <form id="myForm" autocomplete="on">
+    <form id="myForm">
       <input type="text" name="prenom" placeholder="Prénom" required>
       <input type="text" name="nom" placeholder="Nom" required>
       <input type="email" name="email" placeholder="Email" required>
       <input type="tel" name="telephone" placeholder="Téléphone Portable" required>
-      <input type="text" id="adresse" name="adresse" placeholder="Adresse complète" list="liste-adresses" required autocomplete="on">
-      <datalist id="liste-adresses"></datalist>
+
+      <div class="autocomplete-wrapper">
+        <input type="text" id="adresse" name="adresse" placeholder="Adresse complète" required autocomplete="off">
+        <div id="suggestions" class="suggestions" style="display: none;"></div>
+      </div>
 
       <fieldset>
-        <legend>Centres d’intérêts</legend>
+        <legend>Centres d’intérêt</legend>
         <label><input type="checkbox" name="interets[]" value="Tracter sur les marchés"> Tracter sur les marchés</label>
         <label><input type="checkbox" name="interets[]" value="Tracter devant les écoles"> Tracter devant les écoles</label>
         <label><input type="checkbox" name="interets[]" value="Tracter aux stations de métro"> Tracter aux stations de métro</label>
@@ -121,39 +95,43 @@
     </form>
   </div>
 
-<script>
-  let adressesCache = [];
+  <script>
+    let adresses = [];
 
-  // Charger une seule fois le fichier adresses
-  fetch('adresses.json')
-    .then(res => res.json())
-    .then(data => {
-      adressesCache = data;
+    fetch('adresses.json')
+      .then(res => res.json())
+      .then(data => adresses = data);
+
+    const input = document.getElementById('adresse');
+    const suggestionBox = document.getElementById('suggestions');
+
+    input.addEventListener('input', function () {
+      const value = this.value.toLowerCase();
+      suggestionBox.innerHTML = '';
+      if (!value) {
+        suggestionBox.style.display = 'none';
+        return;
+      }
+      const matches = adresses.filter(addr => addr.toLowerCase().includes(value)).slice(0, 8);
+      matches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'suggestion';
+        div.textContent = match;
+        div.addEventListener('click', () => {
+          input.value = match;
+          suggestionBox.innerHTML = '';
+          suggestionBox.style.display = 'none';
+        });
+        suggestionBox.appendChild(div);
+      });
+      suggestionBox.style.display = matches.length ? 'block' : 'none';
     });
 
-  function debounce(fn, delay) {
-    let timer = null;
-    return function(...args) {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn.apply(this, args), delay);
-    };
-  }
-
-  const updateSuggestions = debounce(function(e) {
-    const input = e.target.value.toLowerCase();
-    const dataList = document.getElementById('liste-adresses');
-    dataList.innerHTML = '';
-
-    const suggestions = adressesCache.filter(addr => addr.toLowerCase().includes(input)).slice(0, 10); // max 10 suggestions
-    suggestions.forEach(adresse => {
-      const option = document.createElement('option');
-      option.value = adresse;
-      dataList.appendChild(option);
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.autocomplete-wrapper')) {
+        suggestionBox.style.display = 'none';
+      }
     });
-  }, 250); // délai de 250ms
-
-  document.getElementById('adresse').addEventListener('input', updateSuggestions);
-</script>
-
+  </script>
 </body>
 </html>
