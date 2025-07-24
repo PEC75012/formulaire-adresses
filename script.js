@@ -1,15 +1,42 @@
+
+let adresses = [];
+
 fetch('adresses.json')
   .then(res => res.json())
-  .then(data => {
-    const dataList = document.getElementById('liste-adresses');
-    data.forEach(adresse => {
-      const option = document.createElement('option');
-      option.value = adresse;
-      dataList.appendChild(option);
-    });
-  });
+  .then(data => adresses = data);
 
-document.getElementById('myForm').addEventListener('submit', e => {
+const input = document.getElementById('adresse');
+const suggestionBox = document.getElementById('suggestions');
+
+input.addEventListener('input', function () {
+  const value = this.value.toLowerCase();
+  suggestionBox.innerHTML = '';
+  if (!value) {
+    suggestionBox.style.display = 'none';
+    return;
+  }
+  const matches = adresses.filter(addr => addr.toLowerCase().includes(value)).slice(0, 10);
+  matches.forEach(match => {
+    const div = document.createElement('div');
+    div.className = 'suggestion';
+    div.textContent = match;
+    div.addEventListener('click', () => {
+      input.value = match;
+      suggestionBox.innerHTML = '';
+      suggestionBox.style.display = 'none';
+    });
+    suggestionBox.appendChild(div);
+  });
+  suggestionBox.style.display = matches.length ? 'block' : 'none';
+});
+
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.autocomplete-wrapper')) {
+    suggestionBox.style.display = 'none';
+  }
+});
+
+document.getElementById('myForm').addEventListener('submit', function (e) {
   e.preventDefault();
   const form = e.target;
   const formData = new FormData(form);
@@ -19,13 +46,6 @@ document.getElementById('myForm').addEventListener('submit', e => {
   document.querySelectorAll('input[name="interets[]"]:checked').forEach(cb => interets.push(cb.value));
   values.interets = interets.join(', ');
 
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email);
-  const phoneValid = /^0[1-9]\d{8}$/.test(values.telephone.replace(/\D/g, ''));
-  if (!emailValid || !phoneValid) {
-    alert("Veuillez entrer un email et un numéro de téléphone valides.");
-    return;
-  }
-
   fetch('https://script.google.com/macros/s/AKfycbzKzs7Dra-S40IsUZRJVYeaZGLVNcnkrRkd8p7C9kZQyYaMI33g7NanClJ0X1EAMBc87Q/exec', {
     method: 'POST',
     mode: 'no-cors',
@@ -34,5 +54,5 @@ document.getElementById('myForm').addEventListener('submit', e => {
   }).then(() => {
     alert('Formulaire envoyé !');
     form.reset();
-  }).catch(err => alert('Erreur : ' + err));
+  });
 });
